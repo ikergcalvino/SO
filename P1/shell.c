@@ -529,15 +529,21 @@ void list_rec(char *direct, bool hid, bool lon)
             while ((act = readdir(directory)) != NULL)
             {
                 stat(act->d_name, &st);
-                if ((LetraTF(st.st_mode) == 'd') && (strcmp(act->d_name, ".") != 0) && (strcmp(act->d_name, "..") != 0))
+                if ((strcmp(act->d_name, ".") != 0) && (strcmp(act->d_name, "..") != 0))
                 {
-                    printf("\n");
-                    if (chdir(act->d_name) != 0)
+                    if ((LetraTF(st.st_mode) == 'd'))
                     {
-                        printf("Error: %s.\n", strerror(errno));
+                        printf("\n");
+                        if (chdir(act->d_name) != 0)
+                        {
+                            printf("Error: %s.\n", strerror(errno));
+                        }
+                        else
+                        {
+                            list_rec(act->d_name, hid, lon);
+                            chdir("..");
+                        }
                     }
-                    list_rec(act->d_name, hid, lon);
-                    chdir("..");
                 }
             }
             closedir(directory);

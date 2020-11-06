@@ -16,8 +16,8 @@
 #define MAXTAM 4096
 
 /*
- * Íker García Calviño
- * Juan Toirán Freire 
+ * Íker García Calviño <iker.gcalvino>
+ * Juan Toirán Freire <juan.tfreire>
  */
 
 // funciones aux p1

@@ -30,9 +30,9 @@ void showListaMemoria(ListM *lista, char *mode);
 
 /*
  * Íker García Calviño <iker.gcalvino>
- *  DNI:
+ *  DNI: 34292367B
  * Juan Toirán Freire <juan.tfreire>
- *  DNI:
+ *  DNI: 34291468D
  */
 
 // funciones aux p1

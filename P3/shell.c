@@ -1104,19 +1104,19 @@ void setterpriority(char *pid, char *value)
 
 void getteruid()
 {
-    printf("UID: %s(%s)\n", getuid(), geteuid());
+    printf("UID: %d(%d)\n", getuid(), geteuid());
 }
 
 void setteruid(char *flag, char *id)
 {
     if (strcmp(flag, "-l") == 0)
     {
-        if (setreuid(id, id) == -1)
+        if (setreuid(&id, &id) == -1)
             perror("Not possible to change UID.");
     }
     else
     {
-        if (setuid(id) == -1)
+        if (setuid(&id) == -1)
             perror("Not possible to change UID.");
     }
     getteruid();
@@ -1171,7 +1171,7 @@ void foreground(char *args[])
             if (execvp(args[0], args) == -1)
             {
                 perror("No se puede ejecutar");
-                if (pid1 = 0)
+                if (pid1 == 0)
                     exit(0);
             }
     }
@@ -1263,19 +1263,19 @@ void proc(char *args[], lProc lprocesos)
     pProc p;
 
     if (args[1] == NULL)
-        listarprocs(lprocesos);
+        listprocs(lprocesos);
     else if (!strcmp(args[1], "-fg"))
     {
         if ((p = findProc(lprocesos, (pid_t)atoi(args[2]))) == NULL)
         {
-            listarprocs(lprocesos);
+            listprocs(lprocesos);
             return;
         }
         dp = element(p);
         waitpid(dp.pid, &status, 0);
 
         if (WTERMSIG(status))
-            printf("Proceso %d terminado por la senal %s\n", dp.pid, NombreSenalp(WTERMSIG(status)));
+            printf("Proceso %d terminado por la senal %d\n", dp.pid, NombreSenal(WTERMSIG(status)));
         else
             printf("Proceso %d terminado normalmente.\n", dp.pid);
 
@@ -1285,7 +1285,7 @@ void proc(char *args[], lProc lprocesos)
     {
         if ((p = findProc(lprocesos, (pid_t)atoi(args[1]))) == NULL)
         {
-            listarprocs(lprocesos);
+            listprocs(lprocesos);
             return;
         }
         modElement(p);
@@ -1301,7 +1301,7 @@ void deleteprocs(char *args[], lProc lprocesos)
     pProc p, q;
 
     if (args[1] == NULL)
-        return listarprocs(lprocesos);
+        return listprocs(lprocesos);
     else if (strcmp(args[1], "-term") == 0)
     {
         p = firstProc(lprocesos);

@@ -19,7 +19,6 @@ typedef struct node *lProc;
 
 int Senal(char *sen);
 char *NombreSenal(int sen);
-static struct node *createnode();
 lProc createlProc();
 int emptylist(lProc list);
 void insertProc(dProc dp, pProc p);

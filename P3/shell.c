@@ -219,7 +219,7 @@ void Cmd_AlocateCreateShared(char *arg[], ListM *lista) /*arg[0] is the keyand a
     }
 }
 
-/************************************************************************/ /************************************************************************/
+/************************************************************************/
 
 void *MmapFichero(char *fichero, int protection, Data *data)
 {
@@ -335,6 +335,57 @@ void Cmd_dopmap(char *args[]) /*no arguments necessary*/
     waitpid(pid, NULL, 0);
 }
 
+// funciones aux p3
+
+char *NombreUsuario(uid_t uid)
+{
+    struct passwd *p;
+    if ((p = getpwuid(uid)) == NULL)
+        return (" ??????");
+    return p->pw_name;
+}
+
+uid_t UidUsuario(char *nombre)
+{
+    struct passwd *p;
+    if ((p = getpwnam(nombre)) == NULL)
+        return (uid_t)-1;
+    return p->pw_uid;
+}
+
+void Cmd_getuid(char *tr[])
+{
+    uid_t real = getuid(), efec = geteuid();
+    printf("Credencial real: %d, (%s)\n", real, NombreUsuario(real));
+    printf("Credencial efectiva: %d, (%s)\n", efec, NombreUsuario(efec));
+}
+
+void Cmd_setuid(char *tr[])
+{
+    uid_t uid;
+    int u;
+    if (tr[0] == NULL || (!strcmp(tr[0], "-l") && tr[1] == NULL))
+    {
+        Cmd_getuid(tr);
+        return;
+    }
+    if (!strcmp(tr[0], "-l"))
+    {
+        if ((uid = UidUsuario(tr[1])) == (uid_t)-1)
+        {
+            printf("Usuario no existente %s\n", tr[1]);
+            return;
+        }
+    }
+    else if ((uid = (uid_t)((u = atoi(tr[0])) < 0) ? -1 : u) == (uid_t)-1)
+    {
+        printf("Valor no valido de la credencial %s\n", tr[0]);
+        return;
+    }
+    if (setuid(uid) == -1)
+        printf("Imposible cambiar credencial: %s\n", strerror(errno));
+}
+
 // implementación de la lista y funciones básicas
 
 typedef struct
@@ -380,7 +431,7 @@ void PrintList(List *list, int N)
 
 // funciones auxiliares e implementación del shell
 
-void process(char entrada[], List *lista, ListM *listamemoria, lProc *listaprocesos, bool *bucle);
+void process(char entrada[], List *lista, ListM *listamemoria, lProc listaprocesos, bool *bucle);
 
 void prompt()
 {
@@ -465,7 +516,7 @@ void tiempo(char *arg)
         printf("Error: argument not valid.\n");
 }
 
-void historic(List *lista, ListM *lmemoria, lProc *lprocesos, char *arg)
+void historic(List *lista, ListM *lmemoria, lProc lprocesos, char *arg)
 {
     if (arg == NULL)
         PrintList(lista, (lista->size));
@@ -580,19 +631,15 @@ void del_rec(char *direct)
                         printf("%s\n", strerror(errno));
                 }
                 else if (LetraTF(st.st_mode) == '-')
-                {
                     if (remove(act->d_name) == -1)
                         printf("%s\n", strerror(errno));
-                }
                 del_rec(act->d_name);
             }
         }
         chdir("..");
     }
     else
-    {
         printf("%s\n", strerror(errno));
-    }
     closedir(directory);
     if (rmdir(direct) == -1)
         printf("%s\n", strerror(errno));
@@ -1101,7 +1148,7 @@ void setterpriority(char *pid, char *value)
     else
         getterpriority(pid);
 }
-
+/*
 void getteruid()
 {
     printf("UID: %d(%d)\n", getuid(), geteuid());
@@ -1121,7 +1168,7 @@ void setteruid(char *flag, char *id)
     }
     getteruid();
 }
-
+*/
 void functionfork()
 {
     pid_t pid;
@@ -1140,6 +1187,33 @@ void functionfork()
 
 void eexec(char *args[])
 {
+    int prio;
+    pid_t pid;
+
+    if (args[1] == NULL)
+    {
+        printf("Missing arguments\n");
+        return;
+    }
+
+    if (args[1][0] == '@')
+    {
+        pid = getpid();
+        prio = atoi(args[1] + 1);
+        if (setpriority(PRIO_PROCESS, pid, prio) == -1)
+        {
+            perror("TOY ECHO UN PUTO QUE NO CAMBIA LA PRIORIDAD");
+            return;
+        }
+        execvp(args[2], args + 2);
+        perror("Esto no se ejecuta puto");
+    }
+    else
+    {
+        execvp(args[1], args + 1);
+        perror("Esto no se ejecuta puto");
+    }
+    return;
 }
 
 void foreground(char *args[])
@@ -1275,7 +1349,7 @@ void proc(char *args[], lProc lprocesos)
         waitpid(dp.pid, &status, 0);
 
         if (WTERMSIG(status))
-            printf("Proceso %d terminado por la senal %d\n", dp.pid, NombreSenal(WTERMSIG(status)));
+            printf("Proceso %d terminado por la senal %s\n", dp.pid, NombreSenal(WTERMSIG(status)));
         else
             printf("Proceso %d terminado normalmente.\n", dp.pid);
 
@@ -1348,7 +1422,7 @@ int trocear(char *cadena, char *trozos[])
     return i;
 }
 
-void process(char entrada[], List *lista, ListM *listamemoria, lProc *listaprocesos, bool *bucle)
+void process(char entrada[], List *lista, ListM *listamemoria, lProc listaprocesos, bool *bucle)
 {
     char *trozos[15];
     int acceso = trocear(entrada, trozos);
@@ -1400,9 +1474,9 @@ void process(char entrada[], List *lista, ListM *listamemoria, lProc *listaproce
         else if (strcmp(trozos[0], "setpriority") == 0)
             setterpriority(trozos[1], trozos[2]);
         else if (strcmp(trozos[0], "getuid") == 0)
-            getteruid();
+            Cmd_getuid(trozos); /*getteruid();*/
         else if (strcmp(trozos[0], "setuid") == 0)
-            setteruid(trozos[1], trozos[2]);
+            Cmd_setuid(trozos); /*setteruid(trozos[1], trozos[2]);*/
         else if (strcmp(trozos[0], "fork") == 0)
             functionfork();
         else if (strcmp(trozos[0], "exec") == 0)
@@ -1435,11 +1509,11 @@ int main(int argc, char const *argv[])
 {
     char entrada[MAXTAM];
     bool bucle = false;
+    pProc f, paux;
 
-    lProc *procesos = malloc(sizeof(lProc));
     ListM *memoria = malloc(sizeof(ListM));
     List *lista = malloc(sizeof(List));
-    createlProc(procesos);
+    lProc procesos = createlProc();
     CreateList(lista);
     while (!bucle)
     {
@@ -1447,6 +1521,15 @@ int main(int argc, char const *argv[])
         reader(lista, entrada);
         process(entrada, lista, &memoria, procesos, &bucle);
     }
+
+    f = firstProc(procesos);
+    while (!emptylist(procesos))
+    {
+        paux = f;
+        deleteProc(procesos, paux);
+        f = nextProc(procesos);
+    }
+
     ClearList(lista);
     free(procesos);
     free(memoria);

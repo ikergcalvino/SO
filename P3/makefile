@@ -1,7 +1,7 @@
 CC       = gcc
 CFLAGS   = -Wall
 LDFLAGS  = -lm
-OBJFILES = list.o shell.o
+OBJFILES = list.o listproc.o shell.o
 TARGET   = shell.out
 all: $(TARGET)
 

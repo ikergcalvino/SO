@@ -1189,44 +1189,53 @@ void eexec(char *args[])
 {
     int prio;
     pid_t pid;
+    int i = 0;
 
     if (args[1] == NULL)
     {
         printf("Missing arguments\n");
         return;
     }
-
-    if (args[1][0] == '@')
-    {
-        pid = getpid();
-        prio = atoi(args[1] + 1);
-        if (setpriority(PRIO_PROCESS, pid, prio) == -1)
-        {
-            perror("TOY ECHO UN PUTO QUE NO CAMBIA LA PRIORIDAD");
-            return;
-        }
-        execvp(args[2], args + 2);
-        perror("Esto no se ejecuta puto");
-    }
     else
     {
-        execvp(args[1], args + 1);
-        perror("Esto no se ejecuta puto");
+
+        while (args[i + 1] != NULL)
+            i++;
+
+        if (args[i][0] == '@')
+        {
+            pid = getpid();
+            prio = atoi(args[i] + 1);
+            if (setpriority(PRIO_PROCESS, pid, prio) == -1)
+            {
+                perror("TOY ECHO UN PUTO QUE NO CAMBIA LA PRIORIDAD");
+                return;
+            }
+            execvp(args[2], args + 2);
+            perror("Esto no se ejecuta puto");
+        }
+        else
+        {
+            execvp(args[1], args + 1);
+            perror("Esto no se ejecuta puto");
+        }
     }
-    return;
 }
 
 void foreground(char *args[])
 {
     pid_t pid1, pid2;
-    int aux, prio;
+    int i = 0, aux, prio;
 
-    if (args[0][0] == '@')
+    while (args[i + 1] != NULL)
+        i++;
+
+    if (args[i][0] == '@')
     {
         if ((pid1 = fork()) == 0)
         {
-            prio = atoi(args[0] + 1);
             pid2 = getpid();
+            prio = atoi(args[i] + 1);
             if (setpriority(PRIO_PROCESS, pid2, prio) != -1)
                 if (execvp(args[1], args + 1) == -1)
                 {
@@ -1258,14 +1267,17 @@ void background(char *args[], lProc lprocesos)
 {
     pid_t pid1, pid2;
     dProc process;
-    int prio;
+    int i = 0, prio;
 
-    if (args[0][0] == '@')
+    while (args[i + 1] != NULL)
+        i++;
+
+    if (args[i][0] == '@')
     {
         if ((pid1 = fork()) == 0)
         {
             pid2 = getpid();
-            prio = atoi(args[0] + 1);
+            prio = atoi(args[i] + 1);
             if (setpriority(PRIO_PROCESS, pid2, prio) == -1)
             {
                 perror("Prioridad bloqueada");
@@ -1296,7 +1308,7 @@ void background(char *args[], lProc lprocesos)
         perror("");
         return;
     }
-    if (args[0][0] == '@')
+    if (args[i][0] == '@')
         strcpy(process.line, args[1]);
     else
         strcpy(process.line, args[0]);
@@ -1479,7 +1491,7 @@ void process(char entrada[], List *lista, ListM *listamemoria, lProc listaproces
             Cmd_setuid(trozos); /*setteruid(trozos[1], trozos[2]);*/
         else if (strcmp(trozos[0], "fork") == 0)
             functionfork();
-        else if (strcmp(trozos[0], "exec") == 0)
+        else if (strcmp(trozos[0], "execute") == 0)
             eexec(trozos);
         else if (strcmp(trozos[0], "foreground") == 0)
             foreground(trozos + 1);
@@ -1519,7 +1531,7 @@ int main(int argc, char const *argv[])
     {
         prompt();
         reader(lista, entrada);
-        process(entrada, lista, &memoria, procesos, &bucle);
+        process(entrada, lista, memoria, procesos, &bucle);
     }
 
     f = firstProc(procesos);

@@ -1149,7 +1149,7 @@ void setterpriority(char *pid, char *value)
         getterpriority(pid);
 }
 
-void functionfork()
+void cmd_fork()
 {
     pid_t pid;
     int aux;
@@ -1164,7 +1164,7 @@ void functionfork()
     waitpid(-1, &aux, 0);
 }
 
-void eexec(char *args[])
+void cmd_exec(char *args[])
 {
     int i = 0;
 
@@ -1179,7 +1179,7 @@ void eexec(char *args[])
         {
             if (setpriority(PRIO_PROCESS, getpid(), atoi(args[i] + 1)) == -1)
             {
-                perror("toy exho un p***! vamonoh'");
+                perror("impossible priority");
                 return;
             }
             execvp(args[1], args + i);
@@ -1285,11 +1285,38 @@ void background(char *args[], lProc lprocesos)
         process.pid = pid;
         process.priority = getpriority(PRIO_PROCESS, pid);
         process.signal = "000";
-        strcpy(process.state, "¿?Running¿?");
+        strcpy(process.state, "¿? Running ¿?");
         process.timestamp = time(0);
 
         insertProc(process, lprocesos);
     }
+}
+
+void processampersand(char *args[], lProc lprocesos)
+{
+    int i = 0;
+    while (args[i + 1] != NULL)
+        i++;
+
+    if (args[i][0] == '&')
+    {
+        args[i] = NULL;
+        background(args, lprocesos);
+    }
+    else
+        foreground(args);
+}
+
+void runas(char *args[], lProc lprocesos)
+{
+    Cmd_setuid(args);
+    processampersand(args + 2, lprocesos);
+}
+
+void execas(char *args[])
+{
+    Cmd_setuid(args);
+    cmd_exec(args + 1);
 }
 
 void listprocs(lProc lprocesos)
@@ -1408,7 +1435,7 @@ int trocear(char *cadena, char *trozos[])
 void process(char entrada[], List *lista, ListM *listamemoria, lProc listaprocesos, bool *bucle)
 {
     char *trozos[15];
-    int i = 0, acceso = trocear(entrada, trozos);
+    int acceso = trocear(entrada, trozos);
     if (acceso > 0)
     {
         if (strcmp(trozos[0], "authors") == 0)
@@ -1457,17 +1484,21 @@ void process(char entrada[], List *lista, ListM *listamemoria, lProc listaproces
         else if (strcmp(trozos[0], "setpriority") == 0)
             setterpriority(trozos[1], trozos[2]);
         else if (strcmp(trozos[0], "getuid") == 0)
-            Cmd_getuid(trozos); /*getteruid();*/
+            Cmd_getuid(trozos);
         else if (strcmp(trozos[0], "setuid") == 0)
-            Cmd_setuid(trozos); /*setteruid(trozos[1], trozos[2]);*/
+            Cmd_setuid(trozos);
         else if (strcmp(trozos[0], "fork") == 0)
-            functionfork();
+            cmd_fork();
         else if (strcmp(trozos[0], "execute") == 0)
-            eexec(trozos);
+            cmd_exec(trozos);
         else if (strcmp(trozos[0], "foreground") == 0)
             foreground(trozos + 1);
         else if (strcmp(trozos[0], "background") == 0)
             background(trozos + 1, listaprocesos);
+        else if (strcmp(trozos[0], "run-as") == 0)
+            runas(trozos, listaprocesos);
+        else if (strcmp(trozos[0], "execute-as") == 0)
+            execas(trozos);
         else if (strcmp(trozos[0], "listprocs") == 0)
             listprocs(listaprocesos);
         else if (strcmp(trozos[0], "proc") == 0)
@@ -1477,18 +1508,7 @@ void process(char entrada[], List *lista, ListM *listamemoria, lProc listaproces
         else if (strcmp(trozos[0], "quit") == 0 || strcmp(trozos[0], "end") == 0 || strcmp(trozos[0], "exit") == 0)
             *bucle = true;
         else
-        {
-            while (trozos[i + 1] != NULL)
-                i++;
-
-            if (trozos[i][0] == '&')
-            {
-                trozos[i] = NULL;
-                background(trozos, listaprocesos);
-            }
-            else
-                foreground(trozos);
-        }
+            processampersand(trozos, listaprocesos);
     }
 }
 
